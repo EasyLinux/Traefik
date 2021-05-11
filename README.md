@@ -10,11 +10,27 @@ Le raspberry-pi est la machine frontale utilisée depuis internet.
 
 Le configuration docker swarm est transposable sur docker-compose (utilisation mono-machine)
 
+## Configuration
+
+Traefik lit sa configuration depuis un fichier dans `/etc/traefik/traefik.yaml`
+
+```yaml
+providers:
+    # docker-compose ou docker swarm 
+    docker:
+        endpoint: unix:///var/run/docker.sock
+        watch: true
+        exposedByDefault: false
+    # configuration dans le fichier 
+    file:
+      filename: /etc/traefik/dynamic.yaml
+```
+
 ## docker-compose.yaml ou traefik.yaml
 
 Suivant que nous utilisons traefik sur une architecture mono machine, ou docker swarm nous nommerons le fichier docker-compose.yaml ou traefik.yaml
 
-`traefik.yaml`
+* **traefik.yaml**
 
 ```yaml
 version: '3'
@@ -67,7 +83,7 @@ networks:
       name: Backend
 ```
 
-`docker-compose.yaml`
+* **docker-compose.yaml**
 
 ```yaml
 version: '3'
@@ -104,3 +120,34 @@ services:
       - /Data/Apps/Traefik/letsencrypt:/letsencrypt
 ```
 
+Traefik peut être configuré sur base d'un fichier (relu dynamiquement)
+
+**dynamic.yaml**
+
+```yaml
+http:
+  routers:
+    router-homeassistant:
+      entryPoints:
+        - https
+      rule: Host(`ha.123.com`)
+      service: service-homeassistant
+      tls:
+        certResolver: le
+    router-blueiris:
+      entryPoints:
+        - https
+      rule: Host(`bi.123.com`)
+      service: service-blueiris
+      tls:
+        certResolver: le
+  services:
+    service-homeassistant:
+      loadBalancer:
+        servers:
+        - url: "http://192.168.1.99:8123"
+    service-blueiris:
+      loadBalancer:
+        servers:
+        - url: "http://192.168.1.200:81"
+``̀
